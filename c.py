@@ -19,13 +19,26 @@ def parse_json_and_create_html_table(json_file_path, output_html_path):
     # Initialize a dictionary to store Score/Coverage/Match data by gene name
     score_coverage_match_by_gene = {}
 
-    # First pass: Extract Score/Coverage/Match data for all genes
+    # Counters for summary table
+    summary_counts = {
+        "gene": 0,
+        "CDS": 0,
+        "rRNA": 0,
+        "tRNA": 0
+    }
+
+    # First pass: Extract Score/Coverage/Match data for all genes and count entries
     for entry in features:
         if not isinstance(entry, dict):
             continue
 
+        entry_type = entry.get("type", "")
         gene_name = entry.get("gene", "")
         info = entry.get("info", "")
+
+        # Update summary counts
+        if entry_type in summary_counts:
+            summary_counts[entry_type] += 1
 
         # Check if the info field contains Score/Coverage/Match data
         if gene_name and "psl score" in info and "coverage" in info and "match" in info:
@@ -85,6 +98,32 @@ def parse_json_and_create_html_table(json_file_path, output_html_path):
                 background-color: #f4f4f9;
                 margin: 20px;
             }
+            .tab {
+                overflow: hidden;
+                border: 1px solid #ccc;
+                background-color: #f1f1f1;
+            }
+            .tab button {
+                background-color: inherit;
+                float: left;
+                border: none;
+                outline: none;
+                cursor: pointer;
+                padding: 14px 16px;
+                transition: 0.3s;
+            }
+            .tab button:hover {
+                background-color: #ddd;
+            }
+            .tab button.active {
+                background-color: #ccc;
+            }
+            .tabcontent {
+                display: none;
+                padding: 20px;
+                border: 1px solid #ccc;
+                border-top: none;
+            }
             table {
                 width: 100%;
                 border-collapse: collapse;
@@ -113,35 +152,92 @@ def parse_json_and_create_html_table(json_file_path, output_html_path):
         </style>
     </head>
     <body>
-        <h1>Genomic Data Table</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Gene/Product Name</th>
-                    <th>Annotator</th>
-                    <th>Score/Coverage/Match</th>
-                    <th>Function</th>
-                </tr>
-            </thead>
-            <tbody>
+        <h1>Genomic Data</h1>
+
+        <!-- Tab Buttons -->
+        <div class="tab">
+            <button class="tablinks" onclick="openTab(event, 'MainTable')">Main Table</button>
+            <button class="tablinks" onclick="openTab(event, 'Summary')">Summary</button>
+        </div>
+
+        <!-- Main Table -->
+        <div id="MainTable" class="tabcontent">
+            <h2>Main Table</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Gene/Product Name</th>
+                        <th>Annotator</th>
+                        <th>Score/Coverage/Match</th>
+                        <th>Function</th>
+                    </tr>
+                </thead>
+                <tbody>
     """
 
     # Add table rows
     for row in table_data:
         html_content += f"""
-                <tr>
-                    <td>{row[0]}</td>
-                    <td>{row[1]}</td>
-                    <td>{row[2]}</td>
-                    <td>{row[3]}</td>
-                    <td>{row[4]}</td>
-                </tr>
+                    <tr>
+                        <td>{row[0]}</td>
+                        <td>{row[1]}</td>
+                        <td>{row[2]}</td>
+                        <td>{row[3]}</td>
+                        <td>{row[4]}</td>
+                    </tr>
         """
 
     html_content += """
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary Table -->
+        <div id="Summary" class="tabcontent">
+            <h2>Summary Table</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entry Type</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+
+    # Add summary rows
+    for entry_type, count in summary_counts.items():
+        html_content += f"""
+                    <tr>
+                        <td>{entry_type}</td>
+                        <td>{count}</td>
+                    </tr>
+        """
+
+    html_content += """
+                </tbody>
+            </table>
+        </div>
+
+        <!-- JavaScript for Tabs -->
+        <script>
+            function openTab(evt, tabName) {
+                var i, tabcontent, tablinks;
+                tabcontent = document.getElementsByClassName("tabcontent");
+                for (i = 0; i < tabcontent.length; i++) {
+                    tabcontent[i].style.display = "none";
+                }
+                tablinks = document.getElementsByClassName("tablinks");
+                for (i = 0; i < tablinks.length; i++) {
+                    tablinks[i].className = tablinks[i].className.replace(" active", "");
+                }
+                document.getElementById(tabName).style.display = "block";
+                evt.currentTarget.className += " active";
+            }
+            // Open the first tab by default
+            document.getElementsByClassName("tablinks")[0].click();
+        </script>
     </body>
     </html>
     """
@@ -159,4 +255,4 @@ if __name__ == "__main__":
     output_html_file = sys.argv[2]
 
     parse_json_and_create_html_table(input_json_file, output_html_file)
-    print(f"HTML table has been created successfully at {output_html_file}")
+    print(f"HTML file has been created successfully at {output_html_file}")
